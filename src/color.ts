@@ -16,6 +16,9 @@ export interface Colors {
 /** Decide whether to emit colour, from the --color/--no-color flag, NO_COLOR, and TTY status. */
 export function resolveColor(flag: boolean | null, stream: { isTTY?: boolean }): boolean {
   if (flag !== null) return flag;
+  // Per the NO_COLOR convention (https://no-color.org): disable colour when the
+  // variable is "present and not an empty string". An empty NO_COLOR is
+  // deliberately ignored, so it does not override a TTY default.
   const noColor = process.env["NO_COLOR"];
   if (noColor !== undefined && noColor !== "") return false;
   return Boolean(stream.isTTY);

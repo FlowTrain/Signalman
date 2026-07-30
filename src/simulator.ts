@@ -114,7 +114,7 @@ export function renderSimulation(result: SimulationResult, c: Colors): string {
   result.rankings.forEach((r, i) => {
     const rank = String(i + 1).padStart(rankWidth) + ".";
     const score = scoreColor(c, r.score)(r.score.toFixed(2));
-    const name = r.name.padEnd(width);
+    const name = fitName(r.name, width);
     const matched =
       r.matched.length > 0 ? c.cyan(r.matched.join(", ")) : c.dim("—");
     lines.push(`  ${rank}  ${score}  ${name}  matched: ${matched}`);
@@ -143,6 +143,12 @@ export function caveatFooter(c: Colors): string {
   return (
     c.dim(CAVEAT_LINE_1) + "\n" + c.dim(CAVEAT_LINE_2) + "\n" + c.dim(CAVEAT_LINE_3) + "\n"
   );
+}
+
+/** Pad a name to the column width, or clip it with an ellipsis so columns stay aligned. */
+function fitName(name: string, width: number): string {
+  if (name.length > width) return name.slice(0, Math.max(0, width - 1)) + "…";
+  return name.padEnd(width);
 }
 
 function scoreColor(c: Colors, score: number): (s: string) => string {

@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { simulate, type SkillDoc } from "../src/simulator.js";
+import { makeColors } from "../src/color.js";
+import { renderSimulation, simulate, type SimulationResult, type SkillDoc } from "../src/simulator.js";
 
 const CORPUS: SkillDoc[] = [
   {
@@ -60,4 +61,22 @@ test("empty corpus produces an empty ranking without throwing", () => {
   const { rankings, nameGaps } = simulate([], "anything");
   assert.deepEqual(rankings, []);
   assert.deepEqual(nameGaps, []);
+});
+
+test("over-long names are clipped so the matched column stays aligned", () => {
+  const result: SimulationResult = {
+    request: "x",
+    rankings: [
+      { name: "a".repeat(40), score: 0.5, matched: ["foo"] },
+      { name: "short", score: 0.1, matched: [] },
+    ],
+    nameGaps: [],
+  };
+  const out = renderSimulation(result, makeColors(false));
+  const rows = out.split("\n").filter((l) => l.includes("matched:"));
+  assert.equal(rows.length, 2);
+  // Both "matched:" labels start at the same column.
+  assert.equal(rows[0]!.indexOf("matched:"), rows[1]!.indexOf("matched:"));
+  // The 40-char name was clipped with an ellipsis.
+  assert.ok(rows[0]!.includes("…"));
 });
