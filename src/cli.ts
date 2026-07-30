@@ -1,11 +1,18 @@
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, isAbsolute, join, relative } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { parseArgs } from "./args.js";
-import { discover, type DiscoveryRoot } from "./discovery.js";
+import { parseArgs, type CliOptions } from "./args.js";
+import { makeColors, resolveColor } from "./color.js";
+import { discover, type DiscoveredSkill, type DiscoveryRoot } from "./discovery.js";
 import { parseSkillFile, type ParsedSkill } from "./parse.js";
+import {
+  caveatFooter,
+  renderSimulation,
+  simulate,
+  type SkillDoc,
+} from "./simulator.js";
 
 // Exit codes (spec §7). Rules are not wired up yet, so this skeleton only ever
 // returns 0 (success) or 3 (Signalman itself could not run).
@@ -46,6 +53,10 @@ export function run(argv: string[], cwd: string, home: string): number {
     return EXIT_LINTER_FAILURE;
   }
 
+  if (opts.simulate !== null || opts.simulateFrom !== null) {
+    return runSimulate(opts, skills, cwd);
+  }
+
   reportRoots(roots, skills.map((s) => s.root), cwd, home);
 
   if (skills.length === 0) {
@@ -69,9 +80,64 @@ export function run(argv: string[], cwd: string, home: string): number {
   }
 
   process.stdout.write(
-    `\n(Skeleton: discovery and parsing only. Lint rules and the simulator are not wired up yet.)\n`,
+    `\n(This lists discovery and parsing only; lint rules are not wired up yet. ` +
+      `Use --simulate "<request>" to rank these skills against a request.)\n`,
   );
   return EXIT_OK;
+}
+
+function runSimulate(opts: CliOptions, skills: DiscoveredSkill[], cwd: string): number {
+  const requests: string[] = [];
+  if (opts.simulate !== null) requests.push(opts.simulate);
+  if (opts.simulateFrom !== null) {
+    let contents: string;
+    try {
+      contents = readFileSync(resolve(cwd, opts.simulateFrom), "utf8");
+    } catch (err) {
+      process.stderr.write(`signalman: cannot read --simulate-from file: ${errMessage(err)}\n`);
+      return EXIT_LINTER_FAILURE;
+    }
+    for (const line of contents.split(/\r?\n/)) {
+      const trimmed = line.trim();
+      if (trimmed !== "") requests.push(trimmed);
+    }
+  }
+
+  const colors = makeColors(resolveColor(opts.color, process.stdout));
+
+  if (requests.length === 0) {
+    // e.g. an empty or whitespace-only --simulate-from file. Say so explicitly
+    // rather than printing a bare caveat with no ranking above it.
+    process.stdout.write("No requests to simulate.\n\n");
+    process.stdout.write(caveatFooter(colors));
+    return EXIT_OK;
+  }
+
+  const docs = skills.map(toSkillDoc);
+  const blocks = requests.map((request) =>
+    renderSimulation(simulate(docs, request), colors),
+  );
+  process.stdout.write(blocks.join("\n"));
+
+  // The lexical-only caveat prints once per invocation, always (soul.md).
+  process.stdout.write("\n");
+  process.stdout.write(caveatFooter(colors));
+  return EXIT_OK;
+}
+
+function toSkillDoc(skill: DiscoveredSkill): SkillDoc {
+  let description = "";
+  let name = skill.dirName;
+  try {
+    const parsed = parseSkillFile(skill.filePath);
+    const d = parsed.frontmatter?.["description"];
+    if (typeof d === "string") description = d;
+    const n = parsed.frontmatter?.["name"];
+    if (typeof n === "string" && n.trim() !== "") name = n.trim();
+  } catch {
+    // Unreadable/unparseable: leave description empty so it simply scores 0.
+  }
+  return { name, dirName: skill.dirName, description };
 }
 
 function reportRoots(roots: DiscoveryRoot[], usedRoots: string[], cwd: string, home: string): void {

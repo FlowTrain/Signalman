@@ -1,0 +1,100 @@
+import assert from "node:assert/strict";
+import { test } from "node:test";
+
+import { makeColors } from "../src/color.js";
+import { renderSimulation, simulate, type SimulationResult, type SkillDoc } from "../src/simulator.js";
+
+const CORPUS: SkillDoc[] = [
+  {
+    name: "spreadsheet-fixer",
+    dirName: "spreadsheet-fixer",
+    description: "Fix messy spreadsheets: clean columns and remove duplicate rows in CSV files.",
+  },
+  { name: "data-cleaner", dirName: "data-cleaner", description: "Clean and normalize data records." },
+  { name: "report-writer", dirName: "report-writer", description: "Generate written reports from structured input." },
+  { name: "xlsx", dirName: "xlsx", description: "Utilities for Excel workbooks." },
+];
+
+test("ranks the description whose vocabulary matches the request first", () => {
+  const { rankings } = simulate(CORPUS, "help me clean up this messy spreadsheet");
+  assert.equal(rankings[0]!.name, "spreadsheet-fixer");
+  // Its matched terms include the request's domain words.
+  for (const term of ["spreadsheet", "messy", "clean"]) {
+    assert.ok(rankings[0]!.matched.includes(term), `expected match on ${term}`);
+  }
+});
+
+test("skills with no shared vocabulary score 0 with no matched terms", () => {
+  const { rankings } = simulate(CORPUS, "help me clean up this messy spreadsheet");
+  const xlsx = rankings.find((r) => r.name === "xlsx")!;
+  assert.equal(xlsx.score, 0);
+  assert.deepEqual(xlsx.matched, []);
+});
+
+test("rankings are sorted by descending score", () => {
+  const { rankings } = simulate(CORPUS, "clean messy spreadsheet data");
+  for (let i = 1; i < rankings.length; i++) {
+    assert.ok(rankings[i - 1]!.score >= rankings[i]!.score);
+  }
+});
+
+test("flags a name/description gap: request term is in the name but not the description", () => {
+  const docs: SkillDoc[] = [
+    { name: "pdf-tools", dirName: "pdf-tools", description: "Document helpers." },
+    { name: "notes", dirName: "notes", description: "Keep track of ideas." },
+  ];
+  const { nameGaps } = simulate(docs, "convert my pdf");
+  assert.equal(nameGaps.length, 1);
+  assert.equal(nameGaps[0]!.name, "pdf-tools");
+  assert.deepEqual(nameGaps[0]!.missingTerms, ["pdf"]);
+});
+
+test("no name gap when the description already contains the name term", () => {
+  const docs: SkillDoc[] = [
+    { name: "pdf-tools", dirName: "pdf-tools", description: "Convert and merge pdf documents." },
+  ];
+  const { nameGaps } = simulate(docs, "convert my pdf");
+  assert.deepEqual(nameGaps, []);
+});
+
+test("empty corpus produces an empty ranking without throwing", () => {
+  const { rankings, nameGaps } = simulate([], "anything");
+  assert.deepEqual(rankings, []);
+  assert.deepEqual(nameGaps, []);
+});
+
+test("a request of only stopwords blames the request, not the descriptions", () => {
+  const docs: SkillDoc[] = [{ name: "notes", dirName: "notes", description: "Keep track of ideas." }];
+  const result = simulate(docs, "help me with this");
+  assert.deepEqual(result.requestTerms, []);
+  const out = renderSimulation(result, makeColors(false));
+  assert.match(out, /no distinctive terms to match on/);
+  assert.doesNotMatch(out, /No description contains any term/);
+});
+
+test("a request with terms but no matches blames the descriptions", () => {
+  const docs: SkillDoc[] = [{ name: "notes", dirName: "notes", description: "Keep track of ideas." }];
+  const result = simulate(docs, "convert pdf documents");
+  assert.ok(result.requestTerms.length > 0);
+  const out = renderSimulation(result, makeColors(false));
+  assert.match(out, /No description contains any term/);
+});
+
+test("over-long names are clipped so the matched column stays aligned", () => {
+  const result: SimulationResult = {
+    request: "x",
+    requestTerms: ["foo"],
+    rankings: [
+      { name: "a".repeat(40), score: 0.5, matched: ["foo"] },
+      { name: "short", score: 0.1, matched: [] },
+    ],
+    nameGaps: [],
+  };
+  const out = renderSimulation(result, makeColors(false));
+  const rows = out.split("\n").filter((l) => l.includes("matched:"));
+  assert.equal(rows.length, 2);
+  // Both "matched:" labels start at the same column.
+  assert.equal(rows[0]!.indexOf("matched:"), rows[1]!.indexOf("matched:"));
+  // The 40-char name was clipped with an ellipsis.
+  assert.ok(rows[0]!.includes("…"));
+});
