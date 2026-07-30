@@ -126,7 +126,10 @@ export function renderSimulation(result: SimulationResult, c: Colors): string {
     lines.push("");
     for (const gap of result.nameGaps) {
       const terms = gap.missingTerms.map((t) => `'${t}'`).join(", ");
-      const plural = gap.missingTerms.length === 1 ? "is in its name" : "are in its name";
+      // The gap is detected across both the display name and the directory name,
+      // so the wording covers both to stay accurate when they differ.
+      const plural =
+        gap.missingTerms.length === 1 ? "is in its name or directory" : "are in its name or directory";
       lines.push(
         `  ${c.yellow("⚠")}  '${gap.name}' ranked ${ordinal(gap.rank)}. ` +
           `${terms} ${plural} but not its description.`,

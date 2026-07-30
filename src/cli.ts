@@ -80,7 +80,8 @@ export function run(argv: string[], cwd: string, home: string): number {
   }
 
   process.stdout.write(
-    `\n(Skeleton: discovery and parsing only. Lint rules and the simulator are not wired up yet.)\n`,
+    `\n(This lists discovery and parsing only; lint rules are not wired up yet. ` +
+      `Use --simulate "<request>" to rank these skills against a request.)\n`,
   );
   return EXIT_OK;
 }
@@ -132,7 +133,7 @@ function toSkillDoc(skill: DiscoveredSkill): SkillDoc {
     const d = parsed.frontmatter?.["description"];
     if (typeof d === "string") description = d;
     const n = parsed.frontmatter?.["name"];
-    if (typeof n === "string" && n.trim() !== "") name = n;
+    if (typeof n === "string" && n.trim() !== "") name = n.trim();
   } catch {
     // Unreadable/unparseable: leave description empty so it simply scores 0.
   }
