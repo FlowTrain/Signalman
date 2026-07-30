@@ -102,9 +102,17 @@ function runSimulate(opts: CliOptions, skills: DiscoveredSkill[], cwd: string): 
     }
   }
 
-  const docs = skills.map(toSkillDoc);
   const colors = makeColors(resolveColor(opts.color, process.stdout));
 
+  if (requests.length === 0) {
+    // e.g. an empty or whitespace-only --simulate-from file. Say so explicitly
+    // rather than printing a bare caveat with no ranking above it.
+    process.stdout.write("No requests to simulate.\n\n");
+    process.stdout.write(caveatFooter(colors));
+    return EXIT_OK;
+  }
+
+  const docs = skills.map(toSkillDoc);
   const blocks = requests.map((request) =>
     renderSimulation(simulate(docs, request), colors),
   );

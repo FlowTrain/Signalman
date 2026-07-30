@@ -63,9 +63,27 @@ test("empty corpus produces an empty ranking without throwing", () => {
   assert.deepEqual(nameGaps, []);
 });
 
+test("a request of only stopwords blames the request, not the descriptions", () => {
+  const docs: SkillDoc[] = [{ name: "notes", dirName: "notes", description: "Keep track of ideas." }];
+  const result = simulate(docs, "help me with this");
+  assert.deepEqual(result.requestTerms, []);
+  const out = renderSimulation(result, makeColors(false));
+  assert.match(out, /no distinctive terms to match on/);
+  assert.doesNotMatch(out, /No description contains any term/);
+});
+
+test("a request with terms but no matches blames the descriptions", () => {
+  const docs: SkillDoc[] = [{ name: "notes", dirName: "notes", description: "Keep track of ideas." }];
+  const result = simulate(docs, "convert pdf documents");
+  assert.ok(result.requestTerms.length > 0);
+  const out = renderSimulation(result, makeColors(false));
+  assert.match(out, /No description contains any term/);
+});
+
 test("over-long names are clipped so the matched column stays aligned", () => {
   const result: SimulationResult = {
     request: "x",
+    requestTerms: ["foo"],
     rankings: [
       { name: "a".repeat(40), score: 0.5, matched: ["foo"] },
       { name: "short", score: 0.1, matched: [] },

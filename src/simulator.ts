@@ -43,6 +43,8 @@ export interface NameGap {
 
 export interface SimulationResult {
   request: string;
+  /** Distinct meaningful terms the request reduced to after tokenisation. */
+  requestTerms: string[];
   rankings: Ranking[];
   nameGaps: NameGap[];
 }
@@ -84,7 +86,7 @@ export function simulate(docs: SkillDoc[], request: string): SimulationResult {
     }
   });
 
-  return { request, rankings, nameGaps };
+  return { request, requestTerms: [...requestSet], rankings, nameGaps };
 }
 
 const CAVEAT_LINE_1 =
@@ -132,7 +134,14 @@ export function renderSimulation(result: SimulationResult, c: Colors): string {
     }
   } else if (result.rankings[0]!.score === 0) {
     lines.push("");
-    lines.push(`  ${c.yellow("⚠")}  No description contains any term from this request.`);
+    if (result.requestTerms.length === 0) {
+      lines.push(
+        `  ${c.yellow("⚠")}  This request has no distinctive terms to match on ` +
+          `after removing common words.`,
+      );
+    } else {
+      lines.push(`  ${c.yellow("⚠")}  No description contains any term from this request.`);
+    }
   }
 
   return lines.join("\n") + "\n";
