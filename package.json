@@ -1,0 +1,39 @@
+{
+  "name": "signalman-lint",
+  "version": "0.1.0",
+  "description": "A linter for SKILL.md files that catches the silent failure where a vague description means a skill never loads.",
+  "keywords": [
+    "skill",
+    "skills",
+    "SKILL.md",
+    "linter",
+    "agent-skills",
+    "ai-agents"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "signalman": "bin/signalman.js"
+  },
+  "files": [
+    "dist/src",
+    "bin",
+    "RULES.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc",
+    "pretest": "tsc",
+    "test": "node --test dist/test",
+    "prepublishOnly": "tsc"
+  },
+  "dependencies": {
+    "yaml": "^2.6.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  }
+}
