@@ -24,10 +24,10 @@
     "node": ">=20"
   },
   "scripts": {
-    "build": "tsc",
-    "pretest": "tsc",
+    "build": "tsc && node scripts/copy-assets.mjs",
+    "pretest": "npm run build",
     "test": "node --test \"dist/test/**/*.test.js\"",
-    "prepublishOnly": "tsc"
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "yaml": "^2.6.1"

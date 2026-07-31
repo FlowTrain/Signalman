@@ -1,6 +1,6 @@
 ---
 name: data-cleaner
-description: Use when the user wants to clean a messy spreadsheet or CSV — removing duplicate rows, fixing column headers, and normalizing values.
+description: Use when the user wants to clean a messy spreadsheet or CSV — removing duplicate rows, fixing column headers, and normalizing values. Do NOT use for one-off manual edits.
 ---
 
 # Data cleaner

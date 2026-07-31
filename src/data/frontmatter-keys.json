@@ -1,0 +1,29 @@
+{
+  "_comment": "Frontmatter key -> owning agent, for SK016 portability reporting. 'core' keys are the Agent Skills open standard and portable across all agents. Keys under an agent are that agent's extensions and are ignored elsewhere. Verify against live docs when updating; PRs welcome.",
+  "core": [
+    "name",
+    "description",
+    "license",
+    "compatibility",
+    "metadata",
+    "allowed-tools"
+  ],
+  "byKey": {
+    "when_to_use": "Claude Code",
+    "argument-hint": "Claude Code",
+    "arguments": "Claude Code",
+    "disable-model-invocation": "Claude Code",
+    "user-invocable": "Claude Code",
+    "disallowed-tools": "Claude Code",
+    "model": "Claude Code",
+    "effort": "Claude Code",
+    "context": "Claude Code",
+    "agent": "Claude Code",
+    "background": "Claude Code",
+    "hooks": "Claude Code",
+    "paths": "Claude Code",
+    "shell": "Claude Code",
+    "globs": "Cursor",
+    "alwaysApply": "Cursor"
+  }
+}
