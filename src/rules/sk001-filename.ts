@@ -14,7 +14,7 @@ export const sk001Filename: FileRule = {
     return [
       {
         file: ctx.skill.filePath,
-        message: `The entry file is named '${ctx.skill.fileName}', but skills are only discovered as 'SKILL.md' (exact case), so this one is silently skipped.`,
+        message: `The entry file is named '${ctx.skill.fileName}', but agents only discover files named 'SKILL.md' (exact case), so agents will silently skip this skill.`,
         suggestion: `Rename '${ctx.skill.fileName}' to 'SKILL.md'.`,
       },
     ];

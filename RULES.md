@@ -2,7 +2,8 @@
 
 Every Signalman finding links to its rule here. Each rule says what it checks,
 why it matters, its default severity, and shows a failing (✗) and passing (✓)
-example. Thresholds are configurable in `signalman.config.json`.
+example. The severities and thresholds shown here are the defaults; per-rule
+configuration via `signalman.config.json` is planned (spec §8).
 
 Rules are grouped as **file rules** (checked per skill) and **corpus rules**
 (checked across all skills). More rules are documented as they are implemented.

@@ -78,6 +78,15 @@ test("SK005 flags names that are not lowercase-hyphenated and suggests a slug", 
   assert.ok(f[0]!.suggestion.includes("caps-mismatch"));
 });
 
+test("SK005's suggested slug never itself violates the 64-char limit", () => {
+  const longName = "X".repeat(80);
+  const text = `---\nname: ${longName}\ndescription: Use when the user wants a thing.\n---\nbody`;
+  const f = sk005NameFormat.check(ctx({ dirName: "long", text }));
+  assert.equal(f.length, 1);
+  const suggested = f[0]!.suggestion.match(/'([^']+)'/)?.[1] ?? "";
+  assert.ok(suggested.length <= 64, `suggested slug too long: ${suggested.length}`);
+});
+
 test("SK006 flags a missing description", () => {
   assert.equal(sk006DescriptionPresent.check(ctx({ text: GOOD })).length, 0);
   const noDesc = `---\nname: my-skill\n---\nbody`;

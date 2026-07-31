@@ -18,11 +18,16 @@ export function frontmatterString(ctx: FileContext, key: string): string | null 
   return typeof value === "string" && value.trim() !== "" ? value.trim() : null;
 }
 
-/** Turn any string into a valid lowercase-hyphenated name, for use in suggestions. */
+/**
+ * Turn any string into a valid lowercase-hyphenated name for use in suggestions.
+ * Also enforces the 64-character limit SK005 checks, so a suggested name is never
+ * itself a violation, trimming any hyphen left dangling by the cut.
+ */
 export function slugify(input: string): string {
-  return input
+  const slug = input
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/-+/g, "-")
     .replace(/^-+|-+$/g, "");
+  return slug.length <= 64 ? slug : slug.slice(0, 64).replace(/-+$/, "");
 }
