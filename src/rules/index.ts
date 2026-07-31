@@ -9,6 +9,7 @@ import { sk003NamePresent } from "./sk003-name-present.js";
 import { sk004NameMatchesDir } from "./sk004-name-matches-dir.js";
 import { sk005NameFormat } from "./sk005-name-format.js";
 import { sk006DescriptionPresent } from "./sk006-description-present.js";
+import { sk007DescriptionTrigger } from "./sk007-description-trigger.js";
 import { sk012BodyPresent } from "./sk012-body-present.js";
 import type { CorpusRule, FileRule } from "./types.js";
 
@@ -19,6 +20,7 @@ export const fileRules: FileRule[] = [
   sk004NameMatchesDir,
   sk005NameFormat,
   sk006DescriptionPresent,
+  sk007DescriptionTrigger,
   sk012BodyPresent,
 ];
 

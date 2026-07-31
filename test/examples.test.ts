@@ -28,7 +28,7 @@ function lintDir(rel: string) {
 test("examples/bad fires the implemented file rules, including a per-skill lesson each", () => {
   const result = lintDir("examples/bad");
   const ids = new Set(result.findings.map((f) => f.ruleId));
-  for (const expected of ["SK001", "SK002", "SK004", "SK005", "SK006", "SK012"]) {
+  for (const expected of ["SK001", "SK002", "SK004", "SK005", "SK006", "SK007", "SK012"]) {
     assert.ok(ids.has(expected), `expected ${expected} to fire on examples/bad`);
   }
 });

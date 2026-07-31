@@ -16,6 +16,7 @@ Rules are grouped as **file rules** (checked per skill) and **corpus rules**
 | [SK004](#sk004) | `name` matches directory | warn |
 | [SK005](#sk005) | `name` is lowercase-hyphenated | warn |
 | [SK006](#sk006) | `description` present and non-empty | error |
+| [SK007](#sk007) | `description` states a trigger condition, not just an identity | error |
 | [SK012](#sk012) | Body is non-empty | error |
 
 ---
@@ -87,6 +88,35 @@ like the model being bad at the task, not a missing field.
 
 - ✗ frontmatter with a `name` but no `description`
 - ✓ `description: Use when the user wants to fill or read a PDF form.`
+
+<a id="sk007"></a>
+### SK007 — `description` states a trigger condition
+
+The most important rule. A description is the only text an agent matches a
+request against, so it must answer *when to reach for this skill*, not *what the
+skill is*. An identity statement gives nothing to match against.
+
+Detection, in order of confidence:
+
+1. **Passes** when the description contains an explicit condition marker —
+   `use when`, `when the user`, `whenever`, `trigger`, `for when`, and similar.
+2. **Errors** when the description is an identity statement — it opens as a bare
+   noun phrase (`A tool for …`, `Utilities for …`) or is a pure noun phrase
+   ending in a capability noun (`Spreadsheet utilities and helpers`).
+3. **Info** otherwise — no explicit trigger, but not clearly an identity either.
+   The heuristic degrades to `info` rather than risk a false `error`.
+
+Every finding suggests a rewrite built from your own description, not a generic
+template.
+
+```yaml
+# ✗ says what it is
+description: A tool for working with spreadsheets.
+```
+```yaml
+# ✓ says when to use it
+description: Use when the user wants to clean, edit, or chart data in an .xlsx or .csv file.
+```
 
 <a id="sk012"></a>
 ### SK012 — body is non-empty
