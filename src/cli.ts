@@ -42,7 +42,7 @@ export function run(argv: string[], cwd: string, home: string): number {
   // explicitly rather than silently emitting human output (a silent no-op flag
   // is worse than an honest error).
   if (opts.format === "json") {
-    process.stderr.write("signalman: --format json is not implemented yet.\n");
+    process.stderr.write("signalman: --format json is not implemented yet; use --format human.\n");
     return EXIT_LINTER_FAILURE;
   }
 

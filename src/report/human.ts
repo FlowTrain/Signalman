@@ -109,10 +109,18 @@ function renderFooter(result: LintResult, ctx: ReportContext): string {
     return lines.join("\n");
   }
 
+  // A run with unreadable files or a crashed rule is incomplete; don't dress it
+  // up as a clean pass even when the skills we could read had no findings.
+  const incomplete = ctx.unreadable.length > 0 || result.ruleErrors.length > 0;
   const { error, warn, info } = result.counts;
   if (error + warn + info === 0) {
     lines.push(
-      c.green("✓ No issues found") + ` across ${result.skillCount} skill${plural(result.skillCount)}.`,
+      incomplete
+        ? c.yellow(
+            `No issues in the ${result.skillCount} readable skill${plural(result.skillCount)}, ` +
+              `but the run was incomplete (see above).`,
+          )
+        : c.green("✓ No issues found") + ` across ${result.skillCount} skill${plural(result.skillCount)}.`,
     );
   } else {
     const parts = [

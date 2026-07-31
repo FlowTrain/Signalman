@@ -89,6 +89,9 @@ test("unreadable files are surfaced, not silently dropped", () => {
   assert.match(out, /examples\/bad\/locked\/SKILL\.md/);
   // With no readable skills, it must NOT claim nothing was found.
   assert.doesNotMatch(out, /No SKILL\.md files found/);
+  // And an incomplete run must not read as a clean pass.
+  assert.doesNotMatch(out, /No issues found/);
+  assert.match(out, /run was incomplete/);
 });
 
 test("the footer distinguishes an absent root", () => {
