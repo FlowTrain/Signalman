@@ -106,8 +106,10 @@ Detection, in order of confidence:
 3. **Info** otherwise — no explicit trigger, but not clearly an identity either.
    The heuristic degrades to `info` rather than risk a false `error`.
 
-Every finding suggests a rewrite built from your own description, not a generic
-template.
+Every finding suggests a rewrite built from your own description — reusing the
+phrase after the first `for`/`to`, or failing that the description's own
+vocabulary — rather than a generic template. (A description with no content
+words at all falls back to a short prompt to describe the task.)
 
 ```yaml
 # ✗ says what it is

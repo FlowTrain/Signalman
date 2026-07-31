@@ -57,6 +57,15 @@ test("SK007 matches the identity example from examples/bad", () => {
   assert.match(f[0]!.suggestion, /spreadsheets and tabular data/);
 });
 
+test("SK007 still builds a rewrite from the author's words for a very vague description", () => {
+  // "A tool." has no domain vocabulary, but the suggestion must still be a
+  // trigger-style rewrite reusing its word, not a generic template.
+  const f = sk007.check(ctxFor("A tool."));
+  assert.equal(f.length, 1);
+  assert.match(f[0]!.suggestion, /Use when the user wants to work with tool/);
+  assert.doesNotMatch(f[0]!.suggestion, /name the task and the file types/); // the generic fallback
+});
+
 test("SK007 degrades to info (never error) when it is unsure", () => {
   const f = sk007.check(ctxFor("Fill and flatten PDF forms."));
   assert.equal(f.length, 1);
