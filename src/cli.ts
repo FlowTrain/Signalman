@@ -11,6 +11,7 @@ import { lint, type LintResult } from "./engine.js";
 import { parseSkillFile } from "./parse.js";
 import { displayPath } from "./paths.js";
 import { renderReport } from "./report/human.js";
+import { renderJson } from "./report/json.js";
 import { corpusRules, fileRules } from "./rules/index.js";
 import type { SkillEntry } from "./rules/types.js";
 import { caveatFooter, renderSimulation, simulate, type SkillDoc } from "./simulator.js";
@@ -35,14 +36,6 @@ export function run(argv: string[], cwd: string, home: string): number {
   if (opts.errors.length > 0) {
     for (const e of opts.errors) process.stderr.write(`signalman: ${e}\n`);
     process.stderr.write(`Run 'signalman --help' for usage.\n`);
-    return EXIT_LINTER_FAILURE;
-  }
-
-  // JSON output arrives in a later unit. Until then, reject --format json
-  // explicitly rather than silently emitting human output (a silent no-op flag
-  // is worse than an honest error).
-  if (opts.format === "json") {
-    process.stderr.write("signalman: --format json is not implemented yet; use --format human.\n");
     return EXIT_LINTER_FAILURE;
   }
 
@@ -90,6 +83,11 @@ export function run(argv: string[], cwd: string, home: string): number {
   }
 
   const result = lint({ entries, config, fileRules, corpusRules });
+
+  if (opts.format === "json") {
+    process.stdout.write(renderJson(result, { cwd, home, roots, unreadable }));
+    return computeExitCode(result, config, unreadable.length);
+  }
 
   const colors = makeColors(resolveColor(opts.color, process.stdout));
   process.stdout.write(

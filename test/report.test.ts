@@ -31,7 +31,7 @@ const ctx: ReportContext = {
 function result(findings: Finding[]): LintResult {
   const counts = { error: 0, warn: 0, info: 0 };
   for (const f of findings) counts[f.severity]++;
-  return { findings, counts, ruleErrors: [], skillCount: 3 };
+  return { findings, counts, ruleErrors: [], skillCount: 3, corpus: { distinctiveness: null } };
 }
 
 test("groups findings by severity, worst-first, with counts", () => {

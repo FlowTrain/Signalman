@@ -130,6 +130,15 @@ function renderFooter(result: LintResult, ctx: ReportContext): string {
     ];
     lines.push(`${parts.join("  ·  ")}  across ${result.skillCount} skill${plural(result.skillCount)}.`);
   }
+
+  const dist = result.corpus.distinctiveness;
+  if (dist) {
+    lines.push(
+      c.dim(
+        `Distinctiveness (0–100, higher is more unique): min ${dist.min} · median ${dist.median} · max ${dist.max} across ${dist.count} skills.`,
+      ),
+    );
+  }
   return lines.join("\n");
 }
 
