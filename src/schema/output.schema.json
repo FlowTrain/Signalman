@@ -66,10 +66,10 @@
               "additionalProperties": false,
               "properties": {
                 "count": { "type": "integer", "minimum": 0 },
-                "min": { "type": "integer" },
-                "median": { "type": "integer" },
-                "max": { "type": "integer" },
-                "mean": { "type": "integer" },
+                "min": { "type": "integer", "minimum": 0, "maximum": 100 },
+                "median": { "type": "integer", "minimum": 0, "maximum": 100 },
+                "max": { "type": "integer", "minimum": 0, "maximum": 100 },
+                "mean": { "type": "integer", "minimum": 0, "maximum": 100 },
                 "skills": {
                   "type": "array",
                   "items": {

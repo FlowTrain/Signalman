@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { defaultConfig } from "../src/config.js";
+import { distinctivenessScores } from "../src/corpus.js";
 import { parseSkillText } from "../src/parse.js";
 import { sk101DuplicateName } from "../src/rules/sk101-duplicate-name.js";
 import { sk102TriggerCollision } from "../src/rules/sk102-trigger-collision.js";
@@ -70,6 +71,15 @@ test("SK103 flags the skill built only from words the whole corpus shares", () =
   assert.equal(f.length, 1);
   assert.equal(f[0]!.file, "/s/d/SKILL.md");
   assert.match(f[0]!.message, /Low distinctiveness \(\d+\/100\)/);
+});
+
+test("distinctivenessScores memoizes per entries array (computed once per run)", () => {
+  const entries = [
+    entry("a", "Use when the user fills a PDF form."),
+    entry("b", "Use when the user cleans a CSV file."),
+    entry("c", "Use when the user drafts a git commit."),
+  ];
+  assert.equal(distinctivenessScores(entries), distinctivenessScores(entries));
 });
 
 test("SK103 skips a corpus too small to compare", () => {

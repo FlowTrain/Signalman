@@ -23,8 +23,22 @@ export interface DistinctivenessSummary {
   skills: SkillScore[];
 }
 
+// SK103 and the engine's corpus summary both need these scores in one run, and
+// they're called with the same entries array. Memoize on that array's identity
+// so the tokenisation + TF-IDF pass runs once per run rather than twice. The
+// WeakMap lets old entries be collected once a run is done.
+const scoreCache = new WeakMap<SkillEntry[], SkillScore[]>();
+
 /** Distinctiveness score (0–100) for every described skill. Empty for corpora too small to compare. */
 export function distinctivenessScores(entries: SkillEntry[]): SkillScore[] {
+  const cached = scoreCache.get(entries);
+  if (cached) return cached;
+  const scores = computeScores(entries);
+  scoreCache.set(entries, scores);
+  return scores;
+}
+
+function computeScores(entries: SkillEntry[]): SkillScore[] {
   const docs = describedSkills(entries);
   if (docs.length < 3) return [];
 
