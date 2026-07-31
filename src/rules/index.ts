@@ -20,6 +20,9 @@ import { sk014BrokenReferences } from "./sk014-broken-references.js";
 import { sk015AbsolutePaths } from "./sk015-absolute-paths.js";
 import { sk016FrontmatterKeys } from "./sk016-frontmatter-keys.js";
 import { sk017FileSize } from "./sk017-file-size.js";
+import { sk101DuplicateName } from "./sk101-duplicate-name.js";
+import { sk102TriggerCollision } from "./sk102-trigger-collision.js";
+import { sk103Distinctiveness } from "./sk103-distinctiveness.js";
 import type { CorpusRule, FileRule } from "./types.js";
 
 export const fileRules: FileRule[] = [
@@ -42,6 +45,10 @@ export const fileRules: FileRule[] = [
   sk017FileSize,
 ];
 
-export const corpusRules: CorpusRule[] = [];
+export const corpusRules: CorpusRule[] = [
+  sk101DuplicateName,
+  sk102TriggerCollision,
+  sk103Distinctiveness,
+];
 
 export const allRules: ReadonlyArray<FileRule | CorpusRule> = [...fileRules, ...corpusRules];

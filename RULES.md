@@ -27,6 +27,9 @@ Rules are grouped as **file rules** (checked per skill) and **corpus rules**
 | [SK015](#sk015) | No absolute or `~/` paths in body | warn |
 | [SK016](#sk016) | Frontmatter key portability | info |
 | [SK017](#sk017) | File size within budget | info |
+| [SK101](#sk101) | Duplicate `name` across skills | error |
+| [SK102](#sk102) | Trigger collision — two descriptions too similar | warn |
+| [SK103](#sk103) | Low distinctiveness — description carries no unique vocabulary | warn |
 
 ---
 
@@ -227,3 +230,51 @@ since long reference material belongs in separate files loaded on demand.
 
 - ✗ a single enormous `SKILL.md`
 - ✓ a focused `SKILL.md` that links to `references/` for detail
+
+---
+
+## Corpus rules
+
+These run across all discovered skills at once. Anything can validate YAML;
+these are the checks that reason about a skill's place in a *set*.
+
+<a id="sk101"></a>
+### SK101 — duplicate `name` across skills
+
+Two skills with the same `name` collide: only one can be invoked as `/name`, and
+which one an agent registers is unpredictable.
+
+- ✗ two skills both named `deploy`
+- ✓ `deploy-staging` and `deploy-prod`
+
+<a id="sk102"></a>
+### SK102 — trigger collision
+
+Two descriptions too similar to tell apart compete for the same requests. Signalman
+computes pairwise cosine similarity over the TF-IDF vectors of the descriptions,
+flags pairs above a threshold (default 0.75, configurable), and names the shared
+vocabulary — the actionable part.
+
+```
+warn  SK102  trigger collision (similarity 0.91) with 'spreadsheet-scrubber'
+      examples/bad/data-cleaner/SKILL.md
+      Shared terms: messy, csv, clean, removing, duplicate, row, fixing, column
+```
+
+Fix by differentiating the two descriptions or merging the skills.
+
+<a id="sk103"></a>
+### SK103 — low distinctiveness
+
+A description can be well-formed, specific, and clear and still be built entirely
+from words a dozen other descriptions also use — leaving it no discriminating
+power. This is the mean inverse document frequency of its terms across the
+corpus, reported as a 0–100 score. Skills in the bottom decile that are also
+below an absolute floor are warned; being relatively lowest in a corpus of
+distinctive skills is not itself a problem.
+
+- ✗ a description whose every word appears across most other skills
+- ✓ a description with vocabulary unique to what this skill does
+
+This is the one metric that names a real failure nobody currently has language
+for: "your description is made of words every other skill also uses."
