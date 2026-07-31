@@ -3,6 +3,11 @@
 // the run (spec acceptance criterion 5).
 
 import { isRuleEnabled, severityOverride, type RuleConfig } from "./config.js";
+import {
+  distinctivenessScores,
+  summarizeDistinctiveness,
+  type DistinctivenessSummary,
+} from "./corpus.js";
 import type {
   CorpusRule,
   Finding,
@@ -29,6 +34,8 @@ export interface LintResult {
   /** Rules that threw. A rule crash is a Signalman failure (exit 3), not a lint result. */
   ruleErrors: RuleError[];
   skillCount: number;
+  /** Corpus-wide distinctiveness distribution, or null for corpora too small to compare. */
+  corpus: { distinctiveness: DistinctivenessSummary | null };
 }
 
 const SEVERITY_ORDER = { error: 0, warn: 1, info: 2 } as const;
@@ -75,7 +82,9 @@ export function lint(opts: LintOptions): LintResult {
   const counts: SeverityCounts = { error: 0, warn: 0, info: 0 };
   for (const f of findings) counts[f.severity]++;
 
-  return { findings, counts, ruleErrors, skillCount: entries.length };
+  const distinctiveness = summarizeDistinctiveness(distinctivenessScores(entries));
+
+  return { findings, counts, ruleErrors, skillCount: entries.length, corpus: { distinctiveness } };
 }
 
 /** Attach rule identity and resolve the final severity (raw override → config → rule default). */
