@@ -30,7 +30,7 @@ test("examples/bad fires the implemented file rules, including a per-skill lesso
   const ids = new Set(result.findings.map((f) => f.ruleId));
   for (const expected of [
     "SK001", "SK002", "SK004", "SK005", "SK006", "SK007",
-    "SK010", "SK012", "SK014", "SK015", "SK016",
+    "SK010", "SK012", "SK014", "SK015", "SK016", "SK102",
   ]) {
     assert.ok(ids.has(expected), `expected ${expected} to fire on examples/bad`);
   }
