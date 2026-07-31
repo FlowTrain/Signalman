@@ -40,7 +40,7 @@ export function run(argv: string[], cwd: string, home: string): number {
     return EXIT_LINTER_FAILURE;
   }
 
-  const { config, error: configError } = loadConfig(cwd, opts.config);
+  const { config, error: configError, path: configPath } = loadConfig(cwd, opts.config);
   if (configError !== null) {
     process.stderr.write(`signalman: ${configError}\n`);
     return EXIT_LINTER_FAILURE;
@@ -48,6 +48,8 @@ export function run(argv: string[], cwd: string, home: string): number {
   // A --max-warnings flag overrides the config file.
   if (opts.maxWarnings !== null) config.maxWarnings = opts.maxWarnings;
 
+  // Project roots resolve against the config's directory (the project root),
+  // so running from a subdirectory still scans the right place.
   const discovery = discover({
     paths: opts.paths,
     projectOnly: opts.projectOnly,
@@ -55,6 +57,7 @@ export function run(argv: string[], cwd: string, home: string): number {
     cwd,
     home,
     projectRoots: config.include,
+    projectRootBase: configPath ? dirname(configPath) : cwd,
   });
   const roots = discovery.roots;
   const skills =

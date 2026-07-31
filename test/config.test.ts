@@ -33,6 +33,11 @@ test("loadConfig rejects an unknown severity", () => {
   assert.match(error ?? "", /SK004/);
 });
 
+test("loadConfig rejects an array where an options object is required", () => {
+  assert.match(loadConfig(repoRoot, join(fx, "array-options.json")).error ?? "", /options object/);
+  assert.match(loadConfig(repoRoot, join(fx, "object-options.json")).error ?? "", /options must be an object/);
+});
+
 test("loadConfig errors when an explicit --config path is missing", () => {
   const { error } = loadConfig(repoRoot, join(fx, "does-not-exist.json"));
   assert.match(error ?? "", /not found/);

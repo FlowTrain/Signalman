@@ -148,7 +148,7 @@ function parseRuleSetting(value: unknown): RuleSetting | string {
   if (Array.isArray(value)) {
     const [sev, options] = value;
     if (!isSeverity(sev)) return `first element must be a severity`;
-    if (options !== undefined && (typeof options !== "object" || options === null)) {
+    if (options !== undefined && !isPlainObject(options)) {
       return "second element must be an options object";
     }
     return { severity: sev, ...(options ? { options: options as Record<string, unknown> } : {}) };
@@ -166,7 +166,7 @@ function parseRuleSetting(value: unknown): RuleSetting | string {
       setting.severity = o["severity"];
     }
     if (o["options"] !== undefined) {
-      if (typeof o["options"] !== "object" || o["options"] === null) return "options must be an object";
+      if (!isPlainObject(o["options"])) return "options must be an object";
       setting.options = o["options"] as Record<string, unknown>;
     }
     return setting;
@@ -176,6 +176,11 @@ function parseRuleSetting(value: unknown): RuleSetting | string {
 
 function isSeverity(value: unknown): value is Severity {
   return typeof value === "string" && (SEVERITIES as readonly string[]).includes(value);
+}
+
+/** A non-null, non-array object — arrays are rejected so options stay key/value maps. */
+function isPlainObject(value: unknown): boolean {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function message(err: unknown): string {
