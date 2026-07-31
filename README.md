@@ -95,12 +95,39 @@ npx signalman-lint --simulate-from requests.txt
 npx signalman-lint --format json
 ```
 
-Other flags: `--project-only`, `--personal-only`, `--max-warnings <n>`,
-`--color` / `--no-color`. The installed command is `signalman`.
+Other flags: `--project-only`, `--personal-only`, `--config <path>`,
+`--max-warnings <n>`, `--color` / `--no-color`. The installed command is
+`signalman`.
 
 With no paths, Signalman scans the conventional roots and **reports which it
 scanned and which were absent**, so a clean run is distinguishable from one that
 simply found no skills.
+
+## Configuration (optional)
+
+Signalman looks for `signalman.config.json` upward from the working directory, or
+pass `--config <path>`. Every threshold has an opinionated default, so config is
+only for disagreeing.
+
+```json
+{
+  "include": [".claude/skills", ".github/skills", ".agents/skills"],
+  "exclude": ["**/fixtures/**"],
+  "rules": {
+    "SK010": "off",
+    "SK008": ["warn", { "min": 60, "max": 400 }],
+    "SK102": ["warn", { "threshold": 0.8 }]
+  },
+  "maxWarnings": 0
+}
+```
+
+- **`rules`** — turn a rule off (`"off"`), change its severity (`"warn"`), or set
+  its options (`["warn", { … }]`).
+- **`include`** — project roots to scan instead of the defaults.
+- **`exclude`** — globs of skills to skip.
+- **`maxWarnings`** — fail (exit 1) when warnings exceed this; the
+  `--max-warnings` flag overrides it.
 
 ## Use it as a publish gate (CI)
 
