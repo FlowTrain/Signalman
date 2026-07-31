@@ -1,6 +1,6 @@
 ---
 name: dangling-references
-description: Use when demonstrating references that will not resolve at runtime, such as a missing relative file and paths anchored to an absolute or home location.
+description: Use when demonstrating references that will not resolve at runtime, such as a missing relative file and paths anchored to an absolute or home location. Do NOT use for valid references.
 ---
 
 # Dangling references

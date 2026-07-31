@@ -17,7 +17,16 @@ Rules are grouped as **file rules** (checked per skill) and **corpus rules**
 | [SK005](#sk005) | `name` is lowercase-hyphenated | warn |
 | [SK006](#sk006) | `description` present and non-empty | error |
 | [SK007](#sk007) | `description` states a trigger condition, not just an identity | error |
+| [SK008](#sk008) | `description` length within band (default 40–500) | warn |
+| [SK009](#sk009) | `description` has concrete domain vocabulary | warn |
+| [SK010](#sk010) | `description` declares negative scope | info |
+| [SK011](#sk011) | Consistent grammatical voice in `description` | info |
 | [SK012](#sk012) | Body is non-empty | error |
+| [SK013](#sk013) | Body is not a restatement of the `description` | warn |
+| [SK014](#sk014) | Referenced relative paths exist | warn |
+| [SK015](#sk015) | No absolute or `~/` paths in body | warn |
+| [SK016](#sk016) | Frontmatter key portability | info |
+| [SK017](#sk017) | File size within budget | info |
 
 ---
 
@@ -120,6 +129,44 @@ description: A tool for working with spreadsheets.
 description: Use when the user wants to clean, edit, or chart data in an .xlsx or .csv file.
 ```
 
+<a id="sk008"></a>
+### SK008 — `description` length within band
+
+Too short can't discriminate one skill from another; too long dilutes the
+trigger and risks being truncated in the skill listing. Default band 40–500
+characters, configurable.
+
+- ✗ `description: Spreadsheet tool.`
+- ✓ a description that names the task and the file types, in one or two sentences
+
+<a id="sk009"></a>
+### SK009 — `description` has concrete domain vocabulary
+
+A description built entirely from generic words has nothing specific for a
+request to match against, even if it passes every other rule.
+
+- ✗ `description: A helper that does useful things when needed.`
+- ✓ `description: Use when the user needs to fill or read a PDF form.`
+
+<a id="sk010"></a>
+### SK010 — `description` declares negative scope
+
+Saying what a skill is *not* for ("Do NOT use for …") is a strong signal that
+keeps it from being selected for adjacent tasks. Absence is not a defect, so
+this is info, and only nudges descriptions that already have real content.
+
+- ✗ a description with no "not for" boundary
+- ✓ `… Do NOT use for scanning or OCR of image-only PDFs.`
+
+<a id="sk011"></a>
+### SK011 — consistent grammatical voice
+
+Mixing second person ("you") and third person ("the user") in one description
+reads inconsistently. A smell, not a failure — info only.
+
+- ✗ `Use when you want to help the user clean data.`
+- ✓ `Use when the user wants to clean data.`
+
 <a id="sk012"></a>
 ### SK012 — body is non-empty
 
@@ -129,3 +176,54 @@ on.
 
 - ✗ frontmatter followed by nothing
 - ✓ frontmatter followed by the steps the agent should take
+
+<a id="sk013"></a>
+### SK013 — body is not a restatement of the `description`
+
+If the body just restates the description, the skill carries no actual
+instruction: once loaded, the agent learns nothing it didn't already have from
+the trigger text. Flagged when body and description are highly similar
+(default ≥ 0.9 cosine, configurable).
+
+- ✗ a body that paraphrases the description and stops
+- ✓ a body with the actual steps, examples, and edge cases
+
+<a id="sk014"></a>
+### SK014 — referenced relative paths exist
+
+Relative paths the body links to should exist. A broken reference degrades
+silently at runtime — the agent follows a link to nothing.
+
+- ✗ `See [the template](templates/missing.md).` when that file is absent
+- ✓ a link whose target exists in the skill directory
+
+<a id="sk015"></a>
+### SK015 — no absolute or `~/` paths in body
+
+Absolute paths (`/home/…`, `C:\…`) and home paths (`~/…`) don't resolve in most
+agents, which run from a different machine or working directory than the author.
+
+- ✗ `` Read `~/skills/shared/util.md`. ``
+- ✓ a path relative to the skill directory
+
+<a id="sk016"></a>
+### SK016 — frontmatter key portability
+
+Reports frontmatter keys that only one agent understands, so an author can see
+their cross-agent portability surface. Not a defect — info. The key→agent map
+lives in [`src/data/frontmatter-keys.json`](src/data/frontmatter-keys.json); PRs
+to keep it current are welcome.
+
+- Core keys (`name`, `description`, `license`, `compatibility`, `metadata`,
+  `allowed-tools`) are portable across all known agents.
+- `globs` is Cursor-specific; `context` is Claude Code-specific; and so on.
+
+<a id="sk017"></a>
+### SK017 — file size within budget
+
+Some ecosystems cap instruction-file size. Rather than asserting one number,
+this warns (as info) when a `SKILL.md` grows large (default 64 KB, configurable),
+since long reference material belongs in separate files loaded on demand.
+
+- ✗ a single enormous `SKILL.md`
+- ✓ a focused `SKILL.md` that links to `references/` for detail

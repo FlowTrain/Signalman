@@ -1,6 +1,6 @@
 ---
 name: lowercase-file
-description: Use when showing that a lowercase skill.md filename is silently skipped by most agents, even when everything inside the file is perfectly valid.
+description: Use when showing that a lowercase skill.md filename is silently skipped by most agents, even when everything inside the file is perfectly valid. Do NOT use for correctly-named skills.
 ---
 
 # Lowercase file

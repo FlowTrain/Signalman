@@ -1,6 +1,6 @@
 ---
 name: spreadsheet-scrubber
-description: Use when the user has a messy spreadsheet or CSV to clean up — removing duplicate rows, fixing column headers, and standardizing values.
+description: Use when the user has a messy spreadsheet or CSV to clean up — removing duplicate rows, fixing column headers, and standardizing values. Do NOT use for one-off manual edits.
 ---
 
 # Spreadsheet scrubber

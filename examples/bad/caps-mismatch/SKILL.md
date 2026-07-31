@@ -1,6 +1,6 @@
 ---
 name: Caps_Mismatch
-description: Use when you want to see how Signalman reports a name that is not lowercase-hyphenated and does not match its own directory name.
+description: Use when you want to see how Signalman reports a name that is not lowercase-hyphenated and does not match its own directory name. Do NOT use for other frontmatter fields.
 ---
 
 # Caps mismatch

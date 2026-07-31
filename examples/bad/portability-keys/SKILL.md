@@ -1,6 +1,6 @@
 ---
 name: portability-keys
-description: Use when you want to see how Signalman reports frontmatter keys that only one agent understands, so authors can see their cross-agent portability surface.
+description: Use when demonstrating how Signalman reports frontmatter keys that only one agent understands. Do NOT use for portable core keys.
 globs: "**/*.ts"
 context: fork
 ---
