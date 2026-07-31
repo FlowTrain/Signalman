@@ -46,6 +46,13 @@ export function run(argv: string[], cwd: string, home: string): number {
     return EXIT_LINTER_FAILURE;
   }
 
+  // Config-file loading is not wired up yet. Reject --config rather than accept
+  // it and silently lint with defaults.
+  if (opts.config !== null) {
+    process.stderr.write("signalman: --config is not implemented yet.\n");
+    return EXIT_LINTER_FAILURE;
+  }
+
   const { skills, roots } = discover({
     paths: opts.paths,
     projectOnly: opts.projectOnly,
