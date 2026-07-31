@@ -20,18 +20,18 @@ unconstrained.
 Rules are ESLint-shaped: one file per rule under `src/rules/`, no shared mutable
 state. A file rule runs once per skill; a corpus rule runs once over all skills.
 
-1. Create `src/rules/skNNN-your-rule.ts`:
+1. Create `src/rules/skxxx-your-rule.ts` (replace `xxx` with the rule number):
 
 ```ts
 import { frontmatterString, frontmatterUsable } from "./helpers.js";
 import type { FileRule } from "./types.js";
 
-export const skNNNYourRule: FileRule = {
-  id: "SK0NN",
+export const skxxxYourRule: FileRule = {
+  id: "SKxxx",
   name: "short-kebab-slug",
   severity: "warn", // "error" | "warn" | "info"
   scope: "file",
-  docs: "sk0nn", // RULES.md anchor
+  docs: "skxxx", // RULES.md anchor
   check(ctx) {
     if (!frontmatterUsable(ctx)) return []; // SK002 owns broken frontmatter
     const description = frontmatterString(ctx, "description");
@@ -48,7 +48,7 @@ export const skNNNYourRule: FileRule = {
 ```
 
 2. Register it in `src/rules/index.ts` (add to `fileRules` or `corpusRules`).
-3. Document it in `RULES.md` with an `<a id="sk0nn"></a>` anchor and a ✗/✓ example.
+3. Document it in `RULES.md` with an `<a id="skxxx"></a>` anchor and a ✗/✓ example.
 4. Add a passing and a failing test (see `test/rules.test.ts`).
 
 ## Rules for rules

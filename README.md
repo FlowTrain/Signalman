@@ -26,13 +26,15 @@ request, by lexical similarity between the request and each `description`. When 
 skill you expected to win ranks near the bottom, its description is missing the
 words a user would actually type — and now you can see it.
 
-## Why this is infrastructure, not a Claude accessory
+## Why this is cross-agent infrastructure
 
 `SKILL.md` is an open format ([Agent Skills](https://agentskills.io)) read by
-Claude Code, GitHub Copilot, Codex, Cursor, and others, discovered from
-`.claude/skills/`, `.github/skills/`, and `.agents/skills/`. A description that
-can't route is a cross-agent problem, so Signalman is agent-agnostic: it never
-assumes which agent will read your skills.
+many agents — Claude Code, GitHub Copilot, Codex, Cursor, and others —
+discovered from project roots (`.claude/skills/`, `.github/skills/`,
+`.agents/skills/`) and their personal equivalents (`~/.claude/skills/`,
+`~/.copilot/skills/`, `~/.agents/skills/`). A description that can't route is a
+cross-agent problem, so Signalman is agent-agnostic: it never assumes which agent
+will read your skills.
 
 Signalman judges whether a skill can be **reached**, not whether it's **useful**.
 It does not review skill bodies for quality.
