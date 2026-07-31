@@ -145,14 +145,26 @@ function suggestTrigger(desc: string): string | null {
   if (domain.length > 0) {
     return `Use when the user wants to work with ${domain.slice(0, 4).join(", ")}.`;
   }
+  // Last resort: reuse whatever vocabulary the description has, even capability
+  // words, so the suggestion is still built from the author's own text rather
+  // than a generic template. Only a description with no content words at all
+  // (stopwords/punctuation only) yields null.
+  const all = uniqueTokens(cleaned);
+  if (all.length > 0) {
+    return `Use when the user wants to work with ${all.slice(0, 4).join(", ")}.`;
+  }
   return null;
 }
 
 function domainTerms(desc: string): string[] {
+  return uniqueTokens(desc).filter((t) => !CAPABILITY_TOKENS.has(t));
+}
+
+function uniqueTokens(desc: string): string[] {
   const seen = new Set<string>();
   const out: string[] = [];
   for (const t of tokenize(desc)) {
-    if (CAPABILITY_TOKENS.has(t) || seen.has(t)) continue;
+    if (seen.has(t)) continue;
     seen.add(t);
     out.push(t);
   }
