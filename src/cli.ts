@@ -1,22 +1,24 @@
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { parseArgs, type CliOptions } from "./args.js";
 import { makeColors, resolveColor } from "./color.js";
-import { discover, type DiscoveredSkill, type DiscoveryRoot } from "./discovery.js";
-import { parseSkillFile, type ParsedSkill } from "./parse.js";
-import {
-  caveatFooter,
-  renderSimulation,
-  simulate,
-  type SkillDoc,
-} from "./simulator.js";
+import { defaultConfig, type RuleConfig } from "./config.js";
+import { discover, type DiscoveredSkill } from "./discovery.js";
+import { lint, type LintResult } from "./engine.js";
+import { parseSkillFile } from "./parse.js";
+import { displayPath } from "./paths.js";
+import { renderReport } from "./report/human.js";
+import { corpusRules, fileRules } from "./rules/index.js";
+import type { SkillEntry } from "./rules/types.js";
+import { caveatFooter, renderSimulation, simulate, type SkillDoc } from "./simulator.js";
 
-// Exit codes (spec §7). Rules are not wired up yet, so this skeleton only ever
-// returns 0 (success) or 3 (Signalman itself could not run).
+// Exit codes (spec §7).
 const EXIT_OK = 0;
+const EXIT_MAX_WARNINGS = 1;
+const EXIT_ERRORS = 2;
 const EXIT_LINTER_FAILURE = 3;
 
 export function run(argv: string[], cwd: string, home: string): number {
@@ -57,32 +59,44 @@ export function run(argv: string[], cwd: string, home: string): number {
     return runSimulate(opts, skills, cwd);
   }
 
-  reportRoots(roots, skills.map((s) => s.root), cwd, home);
+  const config = defaultConfig();
+  if (opts.maxWarnings !== null) config.maxWarnings = opts.maxWarnings;
 
-  if (skills.length === 0) {
-    process.stdout.write(`\nNo SKILL.md files found under the scanned roots.\n`);
-    return EXIT_OK;
-  }
-
-  process.stdout.write(`\nDiscovered ${skills.length} skill${skills.length === 1 ? "" : "s"}:\n`);
+  const entries: SkillEntry[] = [];
   for (const skill of skills) {
-    let parsed: ParsedSkill;
     try {
-      parsed = parseSkillFile(skill.filePath);
+      entries.push({ skill, parsed: parseSkillFile(skill.filePath) });
     } catch (err) {
-      process.stdout.write(
-        `  ${skill.dirName}  ${displayPath(skill.filePath, cwd, home)}  (unreadable: ${errMessage(err)})\n`,
+      process.stderr.write(
+        `signalman: cannot read ${displayPath(skill.filePath, cwd, home)}: ${errMessage(err)}\n`,
       );
-      continue;
     }
-    const name = pickName(parsed) ?? skill.dirName;
-    process.stdout.write(`  ${name}  ${displayPath(skill.filePath, cwd, home)}  ${parseStatus(parsed)}\n`);
   }
 
+  const result = lint({ entries, config, fileRules, corpusRules });
+
+  const colors = makeColors(resolveColor(opts.color, process.stdout));
   process.stdout.write(
-    `\n(This lists discovery and parsing only; lint rules are not wired up yet. ` +
-      `Use --simulate "<request>" to rank these skills against a request.)\n`,
+    renderReport(result, {
+      cwd,
+      home,
+      roots,
+      usedRoots: skills.map((s) => s.root),
+      colors,
+    }),
   );
+
+  return computeExitCode(result, config);
+}
+
+function computeExitCode(result: LintResult, config: RuleConfig): number {
+  // A rule that threw means the run is incomplete — treat it as Signalman
+  // failing, not as a clean pass or a normal lint result.
+  if (result.ruleErrors.length > 0) return EXIT_LINTER_FAILURE;
+  if (result.counts.error > 0) return EXIT_ERRORS;
+  if (config.maxWarnings !== null && result.counts.warn > config.maxWarnings) {
+    return EXIT_MAX_WARNINGS;
+  }
   return EXIT_OK;
 }
 
@@ -114,9 +128,7 @@ function runSimulate(opts: CliOptions, skills: DiscoveredSkill[], cwd: string): 
   }
 
   const docs = skills.map(toSkillDoc);
-  const blocks = requests.map((request) =>
-    renderSimulation(simulate(docs, request), colors),
-  );
+  const blocks = requests.map((request) => renderSimulation(simulate(docs, request), colors));
   process.stdout.write(blocks.join("\n"));
 
   // The lexical-only caveat prints once per invocation, always (soul.md).
@@ -138,53 +150,6 @@ function toSkillDoc(skill: DiscoveredSkill): SkillDoc {
     // Unreadable/unparseable: leave description empty so it simply scores 0.
   }
   return { name, dirName: skill.dirName, description };
-}
-
-function reportRoots(roots: DiscoveryRoot[], usedRoots: string[], cwd: string, home: string): void {
-  process.stdout.write(`Scanned roots:\n`);
-  const counts = new Map<string, number>();
-  for (const r of usedRoots) counts.set(r, (counts.get(r) ?? 0) + 1);
-  for (const root of roots) {
-    if (!root.present) {
-      process.stdout.write(`  -  ${displayPath(root.path, cwd, home)}  (absent)\n`);
-      continue;
-    }
-    const n = counts.get(root.path) ?? 0;
-    process.stdout.write(`  +  ${displayPath(root.path, cwd, home)}  (${n} skill${n === 1 ? "" : "s"})\n`);
-  }
-}
-
-function parseStatus(parsed: ParsedSkill): string {
-  if (parsed.frontmatterError) {
-    const loc = parsed.frontmatterError.line ? ` (line ${parsed.frontmatterError.line})` : "";
-    return `frontmatter error: ${parsed.frontmatterError.message}${loc}`;
-  }
-  if (!parsed.frontmatterPresent) return "no frontmatter";
-  return "frontmatter ok";
-}
-
-function pickName(parsed: ParsedSkill): string | null {
-  const name = parsed.frontmatter?.["name"];
-  return typeof name === "string" && name.trim() !== "" ? name : null;
-}
-
-/**
- * Human-friendly path: relative to cwd when it stays inside the project, `~/…`
- * for anything under the home directory, otherwise absolute. Always forward
- * slashes so output reads the same on every platform and matches the spec.
- */
-function displayPath(p: string, cwd: string, home: string): string {
-  const rp = relative(cwd, p);
-  if (rp !== "" && !rp.startsWith("..") && !isAbsolute(rp)) return slash(rp);
-
-  const hp = relative(home, p);
-  if (hp !== "" && !hp.startsWith("..") && !isAbsolute(hp)) return "~/" + slash(hp);
-
-  return slash(p);
-}
-
-function slash(p: string): string {
-  return p.replace(/\\/g, "/");
 }
 
 function errMessage(err: unknown): string {
