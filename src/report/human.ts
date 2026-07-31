@@ -16,6 +16,8 @@ export interface ReportContext {
   roots: DiscoveryRoot[];
   /** Discovery roots that actually yielded skills, for per-root counts. */
   usedRoots: string[];
+  /** Files that were discovered but could not be read (makes the run incomplete). */
+  unreadable: string[];
   colors: Colors;
 }
 
@@ -40,6 +42,14 @@ export function renderReport(result: LintResult, ctx: ReportContext): string {
     out.push(c.red("signalman errors (a rule failed to run)"));
     out.push("");
     for (const e of result.ruleErrors) out.push(renderRuleError(e, ctx));
+  }
+
+  if (ctx.unreadable.length > 0) {
+    out.push(c.red(`could not read (${ctx.unreadable.length})`));
+    out.push("");
+    for (const p of ctx.unreadable) out.push(`  ${displayPath(p, ctx.cwd, ctx.home)}`);
+    out.push(`${INDENT}${c.dim("Discovered but unreadable — results are incomplete.")}`);
+    out.push("");
   }
 
   out.push(renderFooter(result, ctx));
@@ -90,7 +100,12 @@ function renderFooter(result: LintResult, ctx: ReportContext): string {
 
   lines.push("");
   if (result.skillCount === 0) {
-    lines.push("No SKILL.md files found under the scanned roots.");
+    // Distinguish "found nothing" from "found files but couldn't read them".
+    lines.push(
+      ctx.unreadable.length > 0
+        ? c.red(`Could not read ${ctx.unreadable.length} discovered skill${plural(ctx.unreadable.length)}.`)
+        : "No SKILL.md files found under the scanned roots.",
+    );
     return lines.join("\n");
   }
 

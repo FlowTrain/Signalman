@@ -24,6 +24,7 @@ const ctx: ReportContext = {
   home: "/home/u",
   roots: [{ path: "/proj/examples/bad", kind: "explicit", present: true }],
   usedRoots: ["/proj/examples/bad"],
+  unreadable: [],
   colors: makeColors(false),
 };
 
@@ -77,6 +78,17 @@ test("relatedFiles are shown for corpus findings like collisions", () => {
     ctx,
   );
   assert.match(out, /examples\/bad\/y\/SKILL\.md/);
+});
+
+test("unreadable files are surfaced, not silently dropped", () => {
+  const out = renderReport(result([]), {
+    ...ctx,
+    unreadable: ["/proj/examples/bad/locked/SKILL.md"],
+  });
+  assert.match(out, /could not read \(1\)/);
+  assert.match(out, /examples\/bad\/locked\/SKILL\.md/);
+  // With no readable skills, it must NOT claim nothing was found.
+  assert.doesNotMatch(out, /No SKILL\.md files found/);
 });
 
 test("the footer distinguishes an absent root", () => {

@@ -38,6 +38,14 @@ export function run(argv: string[], cwd: string, home: string): number {
     return EXIT_LINTER_FAILURE;
   }
 
+  // JSON output arrives in a later unit. Until then, reject --format json
+  // explicitly rather than silently emitting human output (a silent no-op flag
+  // is worse than an honest error).
+  if (opts.format === "json") {
+    process.stderr.write("signalman: --format json is not implemented yet.\n");
+    return EXIT_LINTER_FAILURE;
+  }
+
   const { skills, roots } = discover({
     paths: opts.paths,
     projectOnly: opts.projectOnly,
@@ -63,13 +71,14 @@ export function run(argv: string[], cwd: string, home: string): number {
   if (opts.maxWarnings !== null) config.maxWarnings = opts.maxWarnings;
 
   const entries: SkillEntry[] = [];
+  const unreadable: string[] = [];
   for (const skill of skills) {
     try {
       entries.push({ skill, parsed: parseSkillFile(skill.filePath) });
-    } catch (err) {
-      process.stderr.write(
-        `signalman: cannot read ${displayPath(skill.filePath, cwd, home)}: ${errMessage(err)}\n`,
-      );
+    } catch {
+      // Discovered but unreadable: track it so the report and exit code reflect
+      // an incomplete run rather than silently dropping the file.
+      unreadable.push(skill.filePath);
     }
   }
 
@@ -82,17 +91,18 @@ export function run(argv: string[], cwd: string, home: string): number {
       home,
       roots,
       usedRoots: skills.map((s) => s.root),
+      unreadable,
       colors,
     }),
   );
 
-  return computeExitCode(result, config);
+  return computeExitCode(result, config, unreadable.length);
 }
 
-function computeExitCode(result: LintResult, config: RuleConfig): number {
-  // A rule that threw means the run is incomplete — treat it as Signalman
-  // failing, not as a clean pass or a normal lint result.
-  if (result.ruleErrors.length > 0) return EXIT_LINTER_FAILURE;
+function computeExitCode(result: LintResult, config: RuleConfig, unreadableCount: number): number {
+  // A rule that threw, or a discovered file we could not read, means the run is
+  // incomplete — treat it as Signalman failing, not a clean pass or lint result.
+  if (result.ruleErrors.length > 0 || unreadableCount > 0) return EXIT_LINTER_FAILURE;
   if (result.counts.error > 0) return EXIT_ERRORS;
   if (config.maxWarnings !== null && result.counts.warn > config.maxWarnings) {
     return EXIT_MAX_WARNINGS;
