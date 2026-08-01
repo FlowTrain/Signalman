@@ -130,16 +130,8 @@ function rewriteSuggestion(desc: string, soft: boolean): string {
 function suggestTrigger(desc: string): string | null {
   const cleaned = desc.trim().replace(/\s+/g, " ");
 
-  const m = cleaned.match(/\b(for|to)\s+(.+?)[.]*$/i);
-  if (m) {
-    const keyword = m[1]!.toLowerCase();
-    const object = lowerFirst(m[2]!.replace(/[.]+$/, "").trim());
-    if (keyword === "to") return `Use when the user wants to ${object}.`;
-    // keyword === "for": a gerund reads with "is …", a noun with "wants to work with …".
-    const firstWord = object.split(/\s+/)[0] ?? "";
-    if (/ing$/i.test(firstWord)) return `Use when the user is ${object}.`;
-    return `Use when the user wants to work with ${object}.`;
-  }
+  const fromForTo = triggerFromForTo(cleaned);
+  if (fromForTo) return fromForTo;
 
   const domain = domainTerms(cleaned);
   if (domain.length > 0) {
@@ -154,6 +146,31 @@ function suggestTrigger(desc: string): string | null {
     return `Use when the user wants to work with ${all.slice(0, 4).join(", ")}.`;
   }
   return null;
+}
+
+/**
+ * Build a trigger from the first "for"/"to" phrase, but only when it yields a
+ * grammatical rewrite. "to" must be an infinitive marker ("… to clean data"),
+ * NOT a preposition ("… appends learnings to LEARNINGS.md") — the latter would
+ * produce "wants to LEARNINGS.md". Returns null when the phrase isn't usable, so
+ * the caller falls back to the description's own domain vocabulary.
+ */
+function triggerFromForTo(cleaned: string): string | null {
+  const m = cleaned.match(/\b(for|to)\s+(.+?)[.]*$/i);
+  if (!m) return null;
+  const keyword = m[1]!.toLowerCase();
+  const object = lowerFirst(m[2]!.replace(/[.]+$/, "").trim());
+  const firstWord = object.split(/\s+/)[0] ?? "";
+  if (keyword === "to") {
+    // Only a plain infinitive verb ("to clean") makes "wants to …" grammatical.
+    // A capitalised word, filename, or number after "to" means it was a
+    // preposition — bail so the caller uses the domain-vocabulary fallback.
+    if (!/^[a-z][a-z-]*$/.test(firstWord)) return null;
+    return `Use when the user wants to ${object}.`;
+  }
+  // keyword === "for": a gerund reads with "is …", a noun with "wants to work with …".
+  if (/ing$/i.test(firstWord)) return `Use when the user is ${object}.`;
+  return `Use when the user wants to work with ${object}.`;
 }
 
 function domainTerms(desc: string): string[] {
@@ -171,9 +188,15 @@ function uniqueTokens(desc: string): string[] {
   return out;
 }
 
-/** Lowercase the first character unless the first word is an acronym (all caps). */
+/**
+ * Lowercase the first character only when the first word is an ordinary
+ * capitalised word (its remaining characters are already lowercase). Acronyms
+ * (PDF), mixed case, and filenames (LEARNINGS.md) are left untouched — the old
+ * all-caps check was fooled by a trailing ".md" and produced "lEARNINGS.md".
+ */
 function lowerFirst(s: string): string {
   const firstWord = s.split(/\s+/)[0] ?? "";
-  if (firstWord.length > 1 && firstWord === firstWord.toUpperCase()) return s;
+  const rest = firstWord.slice(1);
+  if (rest !== "" && rest !== rest.toLowerCase()) return s;
   return s.charAt(0).toLowerCase() + s.slice(1);
 }

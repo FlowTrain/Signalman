@@ -100,12 +100,23 @@ function renderFooter(result: LintResult, ctx: ReportContext): string {
 
   lines.push("");
   if (result.skillCount === 0) {
-    // Distinguish "found nothing" from "found files but couldn't read them".
-    lines.push(
-      ctx.unreadable.length > 0
-        ? c.red(`Could not read ${ctx.unreadable.length} discovered skill${plural(ctx.unreadable.length)}.`)
-        : "No SKILL.md files found under the scanned roots.",
-    );
+    const { error, warn, info } = result.counts;
+    if (ctx.unreadable.length > 0) {
+      lines.push(
+        c.red(`Could not read ${ctx.unreadable.length} discovered skill${plural(ctx.unreadable.length)}.`),
+      );
+    } else if (error + warn + info > 0) {
+      // No valid skill loaded, but we found files pretending to be skills (SK018).
+      // Say so loudly rather than "found nothing" — that silence is the bug.
+      const parts = [
+        colorFor(c, "error")(`${error} error${plural(error)}`),
+        colorFor(c, "warn")(`${warn} warning${plural(warn)}`),
+        colorFor(c, "info")(`${info} info`),
+      ];
+      lines.push(`${parts.join("  ·  ")}  —  and no valid SKILL.md files were discovered.`);
+    } else {
+      lines.push("No SKILL.md files found under the scanned roots.");
+    }
     return lines.join("\n");
   }
 

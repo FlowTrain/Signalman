@@ -66,6 +66,26 @@ test("SK007 still builds a rewrite from the author's words for a very vague desc
   assert.doesNotMatch(f[0]!.suggestion, /name the task and the file types/); // the generic fallback
 });
 
+test("SK007 does not mangle a filename after a prepositional 'to' (LEARNINGS.md regression)", () => {
+  const f = sk007.check(
+    ctxFor(
+      "Extracts high-signal learnings and session telemetry from a session transcript and appends learnings to LEARNINGS.md",
+    ),
+  );
+  assert.equal(f.length, 1);
+  assert.equal(f[0]!.severity, "info"); // no explicit trigger, but not a clear identity
+  assert.doesNotMatch(f[0]!.suggestion, /lEARNINGS/); // casing must not be mangled
+  assert.doesNotMatch(f[0]!.suggestion, /wants to LEARNINGS\.md/i); // 'to' was a preposition, not an infinitive
+  assert.match(f[0]!.suggestion, /Use when the user wants to work with /); // clean fallback to the author's words
+});
+
+test("SK007 preserves an acronym/extension when reusing the author's words", () => {
+  const f = sk007.check(ctxFor("Utilities for API integration."));
+  assert.equal(f.length, 1);
+  assert.match(f[0]!.suggestion, /API integration/); // not "aPI"
+  assert.doesNotMatch(f[0]!.suggestion, /aPI/);
+});
+
 test("SK007 degrades to info (never error) when it is unsure", () => {
   const f = sk007.check(ctxFor("Fill and flatten PDF forms."));
   assert.equal(f.length, 1);
