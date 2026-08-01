@@ -33,6 +33,10 @@ export interface DiscoveryOptions {
   personalOnly: boolean;
   cwd: string;
   home: string;
+  /** Override the default project roots (from config `include`). */
+  projectRoots?: string[];
+  /** Base directory project roots resolve against (the config's dir); defaults to cwd. */
+  projectRootBase?: string;
 }
 
 // Conventional project and personal skill roots (spec §9), verified against
@@ -58,8 +62,10 @@ export function discover(opts: DiscoveryOptions): DiscoveryResult {
     const wantProject = !opts.personalOnly;
     const wantPersonal = !opts.projectOnly;
     if (wantProject) {
-      for (const r of PROJECT_ROOTS) {
-        const abs = resolve(opts.cwd, r);
+      const projectRoots = opts.projectRoots ?? PROJECT_ROOTS;
+      const base = opts.projectRootBase ?? opts.cwd;
+      for (const r of projectRoots) {
+        const abs = resolve(base, r);
         roots.push({ path: abs, kind: "project", present: existsSync(abs) });
       }
     }

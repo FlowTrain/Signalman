@@ -1,0 +1,11 @@
+{
+  "maxWarnings": 3,
+  "include": [".claude/skills"],
+  "exclude": ["**/fixtures/**"],
+  "rules": {
+    "SK010": "off",
+    "SK004": "error",
+    "SK008": ["warn", { "min": 60, "max": 400 }],
+    "SK102": { "severity": "warn", "options": { "threshold": 0.8 } }
+  }
+}

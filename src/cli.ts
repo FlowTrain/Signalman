@@ -1,15 +1,16 @@
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { parseArgs, type CliOptions } from "./args.js";
 import { makeColors, resolveColor } from "./color.js";
-import { defaultConfig, type RuleConfig } from "./config.js";
+import { loadConfig, type RuleConfig } from "./config.js";
 import { discover, type DiscoveredSkill } from "./discovery.js";
 import { lint, type LintResult } from "./engine.js";
+import { matchesAnyGlob } from "./glob.js";
 import { parseSkillFile } from "./parse.js";
-import { displayPath } from "./paths.js";
+import { displayPath, slash } from "./paths.js";
 import { renderReport } from "./report/human.js";
 import { renderJson } from "./report/json.js";
 import { corpusRules, fileRules } from "./rules/index.js";
@@ -39,20 +40,30 @@ export function run(argv: string[], cwd: string, home: string): number {
     return EXIT_LINTER_FAILURE;
   }
 
-  // Config-file loading is not wired up yet. Reject --config rather than accept
-  // it and silently lint with defaults.
-  if (opts.config !== null) {
-    process.stderr.write("signalman: --config is not implemented yet.\n");
+  const { config, error: configError, path: configPath } = loadConfig(cwd, opts.config);
+  if (configError !== null) {
+    process.stderr.write(`signalman: ${configError}\n`);
     return EXIT_LINTER_FAILURE;
   }
+  // A --max-warnings flag overrides the config file.
+  if (opts.maxWarnings !== null) config.maxWarnings = opts.maxWarnings;
 
-  const { skills, roots } = discover({
+  // Project roots resolve against the config's directory (the project root),
+  // so running from a subdirectory still scans the right place.
+  const discovery = discover({
     paths: opts.paths,
     projectOnly: opts.projectOnly,
     personalOnly: opts.personalOnly,
     cwd,
     home,
+    projectRoots: config.include,
+    projectRootBase: configPath ? dirname(configPath) : cwd,
   });
+  const roots = discovery.roots;
+  const skills =
+    config.exclude && config.exclude.length > 0
+      ? discovery.skills.filter((s) => !isExcluded(s.filePath, cwd, config.exclude!))
+      : discovery.skills;
 
   // An explicit path that does not exist is a linter failure, not a lint finding.
   const missingExplicit = roots.filter((r) => r.kind === "explicit" && !r.present);
@@ -66,9 +77,6 @@ export function run(argv: string[], cwd: string, home: string): number {
   if (opts.simulate !== null || opts.simulateFrom !== null) {
     return runSimulate(opts, skills, cwd);
   }
-
-  const config = defaultConfig();
-  if (opts.maxWarnings !== null) config.maxWarnings = opts.maxWarnings;
 
   const entries: SkillEntry[] = [];
   const unreadable: string[] = [];
@@ -169,6 +177,12 @@ function toSkillDoc(skill: DiscoveredSkill): SkillDoc {
 
 function errMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
+}
+
+/** True when a skill path matches a config `exclude` glob (tried relative and absolute). */
+function isExcluded(filePath: string, cwd: string, globs: string[]): boolean {
+  const rel = slash(relative(cwd, filePath));
+  return matchesAnyGlob(rel, globs) || matchesAnyGlob(slash(filePath), globs);
 }
 
 function getVersion(): string {
