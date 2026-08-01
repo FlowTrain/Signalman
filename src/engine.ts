@@ -93,8 +93,10 @@ function stamp(rule: FileRule | CorpusRule, raw: RawFinding, config: RuleConfig)
   return { ...raw, severity, ruleId: rule.id, ruleName: rule.name, docs: rule.docs };
 }
 
-/** Worst-first, then by file, then by line, then by rule id — stable and readable. */
-function sortFindings(findings: Finding[]): void {
+/** Worst-first, then by file, then by line, then by rule id — stable and readable.
+ *  Exported so callers that merge in extra findings after lint() (e.g. discovery-level
+ *  near-misses in the CLI) can restore the same ordering instead of duplicating it. */
+export function sortFindings(findings: Finding[]): void {
   findings.sort(
     (a, b) =>
       SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity] ||

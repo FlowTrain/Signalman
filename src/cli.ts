@@ -7,7 +7,7 @@ import { parseArgs, type CliOptions } from "./args.js";
 import { makeColors, resolveColor } from "./color.js";
 import { loadConfig, type RuleConfig } from "./config.js";
 import { discover, type DiscoveredSkill } from "./discovery.js";
-import { lint, type LintResult } from "./engine.js";
+import { lint, sortFindings, type LintResult } from "./engine.js";
 import { matchesAnyGlob } from "./glob.js";
 import { nearMissFindings } from "./near-miss.js";
 import { parseSkillFile } from "./parse.js";
@@ -105,6 +105,10 @@ export function run(argv: string[], cwd: string, home: string): number {
     result.findings.push(f);
     result.counts[f.severity]++;
   }
+  // lint() returns findings sorted worst-first; the merge above appends, so restore
+  // that ordering (the human and JSON reporters both rely on it). Reuse the engine's
+  // comparator rather than duplicating it here.
+  if (nearMissPaths.length > 0) sortFindings(result.findings);
 
   if (opts.format === "json") {
     process.stdout.write(renderJson(result, { cwd, home, roots, unreadable }));
