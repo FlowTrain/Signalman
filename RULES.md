@@ -27,6 +27,7 @@ Rules are grouped as **file rules** (checked per skill) and **corpus rules**
 | [SK015](#sk015) | No absolute or `~/` paths in body | warn |
 | [SK016](#sk016) | Frontmatter key portability | info |
 | [SK017](#sk017) | File size within budget | info |
+| [SK018](#sk018) | File in a skills root is not `SKILL.md` (won't be discovered) | warn |
 | [SK101](#sk101) | Duplicate `name` across skills | error |
 | [SK102](#sk102) | Trigger collision — two descriptions too similar | warn |
 | [SK103](#sk103) | Low distinctiveness — description carries no unique vocabulary | warn |
@@ -230,6 +231,20 @@ since long reference material belongs in separate files loaded on demand.
 
 - ✗ a single enormous `SKILL.md`
 - ✓ a focused `SKILL.md` that links to `references/` for detail
+
+<a id="sk018"></a>
+### SK018 — file in a skills root is not `SKILL.md`
+
+A `.md` file sitting directly in a skills root (like `.claude/skills/`) but not
+named `SKILL.md` is never discovered as a skill. Skills live at `<name>/SKILL.md`
+— a directory named for the skill, containing `SKILL.md`. A flat file loads as
+nothing, and nothing warns: the exact silent failure Signalman exists to surface.
+Only files carrying YAML frontmatter are flagged, so notes and READMEs in the
+folder are left alone. It defaults to a warning; run with `--max-warnings 0` to
+make it fail CI.
+
+- ✗ `.claude/skills/data-cleaner.md`
+- ✓ `.claude/skills/data-cleaner/SKILL.md`
 
 ---
 

@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, realpathSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, realpathSync, statSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 
 export interface DiscoveredSkill {
@@ -24,6 +24,11 @@ export interface DiscoveryRoot {
 export interface DiscoveryResult {
   skills: DiscoveredSkill[];
   roots: DiscoveryRoot[];
+  /**
+   * Files that look like skills but are not named SKILL.md, so no agent discovers
+   * them (SK018). Absolute, real paths. Direct children of a root only.
+   */
+  nearMisses: string[];
 }
 
 export interface DiscoveryOptions {
@@ -102,7 +107,70 @@ export function discover(opts: DiscoveryOptions): DiscoveryResult {
   }
 
   skills.sort((a, b) => a.filePath.localeCompare(b.filePath));
-  return { skills, roots };
+
+  // Near-misses: files that look like skills but sit where a directory should be,
+  // so nothing discovers them. Skip anything already collected as a real skill.
+  const nearMisses: string[] = [];
+  const seenNear = new Set<string>();
+  for (const root of roots) {
+    if (!root.present) continue;
+    for (const filePath of collectNearMisses(root.path)) {
+      let real: string;
+      try {
+        real = realpathSync(filePath);
+      } catch {
+        real = filePath;
+      }
+      if (seen.has(real) || seenNear.has(real)) continue;
+      seenNear.add(real);
+      nearMisses.push(real);
+    }
+  }
+  nearMisses.sort((a, b) => a.localeCompare(b));
+
+  return { skills, roots, nearMisses };
+}
+
+/**
+ * Files in a skills root that look like skills but aren't named SKILL.md, so no
+ * agent will discover them. Direct children only — a stray .md deep inside a real
+ * skill (references/, assets/) is legitimate. A YAML frontmatter fence is
+ * required, so plain notes and READMEs in the folder are not flagged.
+ */
+function collectNearMisses(start: string): string[] {
+  const stat = safeStat(start);
+  if (!stat) return [];
+  if (stat.isFile()) return isNearMiss(start) ? [start] : [];
+
+  let entries;
+  try {
+    entries = readdirSync(start, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+  const out: string[] = [];
+  for (const entry of entries) {
+    if (!entry.isFile()) continue;
+    const full = join(start, entry.name);
+    if (isNearMiss(full)) out.push(full);
+  }
+  return out;
+}
+
+function isNearMiss(file: string): boolean {
+  const name = basename(file);
+  if (!/\.md$/i.test(name)) return false;
+  if (SKILL_FILE.test(name)) return false; // a real (or mis-cased) SKILL.md — SK001's job
+  if (/^readme\.md$/i.test(name)) return false; // documentation, not a skill attempt
+  return hasFrontmatter(file);
+}
+
+function hasFrontmatter(file: string): boolean {
+  try {
+    return /^\uFEFF?---\r?\n/.test(readFileSync(file, "utf8"));
+  } catch {
+    return false;
+  }
 }
 
 /** Collect every SKILL.md (any casing) at or below a path, safe against symlink cycles. */
