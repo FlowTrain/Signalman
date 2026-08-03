@@ -9,12 +9,11 @@ import { loadConfig, type RuleConfig } from "./config.js";
 import { discover, type DiscoveredSkill } from "./discovery.js";
 import { lint, sortFindings, type LintResult } from "./engine.js";
 import { matchesAnyGlob } from "./glob.js";
-import { nearMissFindings } from "./near-miss.js";
 import { parseSkillFile } from "./parse.js";
 import { displayPath, slash } from "./paths.js";
 import { renderReport } from "./report/human.js";
 import { renderJson } from "./report/json.js";
-import { corpusRules, fileRules } from "./rules/index.js";
+import { skillPack } from "./packs/skill/pack.js";
 import type { SkillEntry } from "./rules/types.js";
 import { caveatFooter, renderSimulation, simulate, type SkillDoc } from "./simulator.js";
 
@@ -91,7 +90,12 @@ export function run(argv: string[], cwd: string, home: string): number {
     }
   }
 
-  const result = lint({ entries, config, fileRules, corpusRules });
+  const result = lint({
+    entries,
+    config,
+    fileRules: skillPack.fileRules,
+    corpusRules: skillPack.corpusRules,
+  });
 
   // Merge in near-misses (SK018): files that look like skills but won't be
   // discovered. They aren't parsed skills, so they don't flow through the rule
@@ -101,7 +105,7 @@ export function run(argv: string[], cwd: string, home: string): number {
     config.exclude && config.exclude.length > 0
       ? discovery.nearMisses.filter((p) => !isExcluded(p, cwd, config.exclude!))
       : discovery.nearMisses;
-  for (const f of nearMissFindings(nearMissPaths)) {
+  for (const f of skillPack.nearMissFindings?.(nearMissPaths) ?? []) {
     result.findings.push(f);
     result.counts[f.severity]++;
   }
