@@ -13,6 +13,7 @@ import { parseSkillFile } from "./parse.js";
 import { displayPath, slash } from "./paths.js";
 import { renderReport } from "./report/human.js";
 import { renderJson } from "./report/json.js";
+import { renderSummary } from "./report/summary.js";
 import { skillPack } from "./packs/skill/pack.js";
 import type { SkillEntry } from "./rules/types.js";
 import { caveatFooter, renderSimulation, simulate, type SkillDoc } from "./simulator.js";
@@ -115,7 +116,15 @@ export function run(argv: string[], cwd: string, home: string): number {
   if (nearMissPaths.length > 0) sortFindings(result.findings);
 
   if (opts.format === "json") {
+    // JSON is the complete machine feed (this is what TIMC / a CI step ingests),
+    // so --summary is a human convenience and JSON always wins when both are set.
     process.stdout.write(renderJson(result, { cwd, home, roots, unreadable }));
+    return computeExitCode(result, config, unreadable.length);
+  }
+
+  if (opts.summary) {
+    const summaryColors = makeColors(resolveColor(opts.color, process.stdout));
+    process.stdout.write(renderSummary(result, summaryColors));
     return computeExitCode(result, config, unreadable.length);
   }
 
@@ -232,6 +241,7 @@ Options:
   --simulate-from <file>   Read one request per line and rank each
   --project-only           Scan only project roots
   --personal-only          Scan only personal roots
+  --summary                Print a per-rule rollup (counts) instead of full findings
   --config <path>          Path to signalman.config.json
   --max-warnings <n>       Fail (exit 1) when warnings exceed n
   --color / --no-color     Force or disable coloured output
@@ -239,7 +249,7 @@ Options:
   -v, --version            Show version
 
 With no paths, Signalman scans the conventional skill roots
-(.claude/skills, .github/skills, .agents/skills and their personal equivalents).
+(.claude/skills, .claude/plugins, .github/skills, .agents/skills and their personal equivalents).
 `,
   );
 }

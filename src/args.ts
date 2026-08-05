@@ -13,6 +13,8 @@ export interface CliOptions {
   personalOnly: boolean;
   config: string | null;
   maxWarnings: number | null;
+  /** Print a per-rule rollup instead of the full per-finding report. */
+  summary: boolean;
   /** null = decide from TTY; true/false = forced by --color / --no-color. */
   color: boolean | null;
   help: boolean;
@@ -39,6 +41,7 @@ export function parseArgs(argv: string[]): CliOptions {
     personalOnly: false,
     config: null,
     maxWarnings: null,
+    summary: false,
     color: null,
     help: false,
     version: false,
@@ -84,6 +87,9 @@ export function parseArgs(argv: string[]): CliOptions {
           break;
         case "--personal-only":
           opts.personalOnly = true;
+          break;
+        case "--summary":
+          opts.summary = true;
           break;
         case "--color":
           opts.color = true;

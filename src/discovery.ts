@@ -46,8 +46,12 @@ export interface DiscoveryOptions {
 
 // Conventional project and personal skill roots (spec §9), verified against
 // agentskills.io and the Claude Code / GitHub Copilot discovery docs.
-const PROJECT_ROOTS = [".claude/skills", ".github/skills", ".agents/skills"];
-const PERSONAL_ROOTS = [".claude/skills", ".copilot/skills", ".agents/skills"];
+// `.claude/plugins` added 2026-08 (verified against Claude Code plugin docs): plugins
+// bundle skills at `<plugin>/skills/<name>/SKILL.md`, so the recursive walk below finds
+// them under the plugins root. Project-local plugins are version-controlled and lintable;
+// the personal `~/.claude/plugins` set is the installed/mutable working set (audit, not CI).
+const PROJECT_ROOTS = [".claude/skills", ".claude/plugins", ".github/skills", ".agents/skills"];
+const PERSONAL_ROOTS = [".claude/skills", ".claude/plugins", ".copilot/skills", ".agents/skills"];
 
 // Directories never worth walking into.
 const IGNORE_DIRS = new Set(["node_modules", ".git"]);
